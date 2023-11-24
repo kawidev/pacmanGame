@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
 //Główny panel do rysowania elementów gry, w tym planszy i postaci.
 public class GamePanel extends JPanel {
     private JTable gameTable;
-    private List<Drawable> drawables;
 
     public GamePanel(GameModel gameModel) {
         CustomTableModel tableModel = new CustomTableModel(gameModel);
