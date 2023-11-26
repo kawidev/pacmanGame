@@ -19,7 +19,7 @@ public class GameModel {
     private int score; // Wynik gry
     private int lives; // Liczba żyć
 
-    private final int GHOST_FOR_CELLS = 60;
+    private final int GHOST_FOR_CELLS = 45;
 
     private GameLevel gameLevel;
 
@@ -33,23 +33,17 @@ public class GameModel {
         this.cols = cols;
         this.board = new Board(rows, cols); // Inicjalizacja planszy
 
-        ghosts = new ArrayList<>(); // Inicjalizacja duchów
-        // Ustawianie pozostałych elementów gry
-        mazeGenerator = new MazeGenerator(rows, cols);
-        generateMaze();
+        this.ghosts = new ArrayList<>();
 
-        CellFinder firstCellFinder = (CellType[][] maze) -> {
-            for (int r = 0; r < maze.length; r++) {
-                for (int c = 0; c < maze[0].length; c++) {
-                    if (maze[r][c] == CellType.EMPTY) {
-                        return new Point(c, r); // Return the first empty cell encountered
-                    }
-                }
-            }
-            return null; // Return null if no empty cell is found
-        };
+        initializeMaze();
+        initializePacman();
+        initializeGhosts();
 
-        EmptyCellCounter emptyCells = (CellType[][] maze) -> {
+
+    }
+
+    public void initializeGhosts() {
+        EmptyCellCounter emptyCellsCounter = (CellType[][] maze) -> {
             int count = 0;
             for (CellType[] row : maze) {
                 for (CellType cell : row) {
@@ -60,13 +54,29 @@ public class GameModel {
             }
             return count;
         };
+        int emptyCellsNum = emptyCellsCounter.calculate(maze);
+        createGhosts(emptyCellsNum / GHOST_FOR_CELLS, new int[]{5, 6, 7, 8, 9});
+    }
 
-        int emptyCellsNum = emptyCells.calculate(maze);
+    public void initializeMaze() {
+        mazeGenerator = new MazeGenerator(rows, cols);
+        generateMaze();
+    }
 
-        createGhostsInSectors(emptyCellsNum / GHOST_FOR_CELLS, new int[]{5, 6, 7, 8, 9});
-
+    public void initializePacman() {
+        CellFinder firstCellFinder = (CellType[][] maze) -> {
+            for (int r = 0; r < maze.length; r++) {
+                for (int c = 0; c < maze[0].length; c++) {
+                    if (maze[r][c] == CellType.EMPTY) {
+                        return new Point(c, r);
+                    }
+                }
+            }
+            return null;
+        };
         Point startPoint = firstCellFinder.findFirstEmptyCell(maze);
-        this.pacman = new Pacman(this,startPoint); // Inicjalizacja Pacmana na srodku
+        assert startPoint != null;
+        this.pacman = new Pacman(this, startPoint);
         pacman.startMoving();
     }
 
@@ -76,7 +86,7 @@ public class GameModel {
         maze = mazeGenerator.getMaze(); // Pobierz wygenerowany labirynt
     }
 
-    private void createGhostsInSectors(int totalGhosts, int[] sectors) {
+    private void createGhosts(int totalGhosts, int[] sectors) {
         int ghostsPerSector = totalGhosts / sectors.length;
 
         for (int sector : sectors) {
@@ -96,15 +106,15 @@ public class GameModel {
         int sectorColEnd = sectorColStart + (cols / 3);
 
         Random rand = new Random();
-        int row, col, attempts = 0;
+        int row, col;
+        boolean isPositionValid;
         do {
             row = rand.nextInt(sectorRowEnd - sectorRowStart) + sectorRowStart;
             col = rand.nextInt(sectorColEnd - sectorColStart) + sectorColStart;
-            attempts++;
-            if (attempts > 50) return null; // Unikamy nieskończonej pętli
-        } while (maze[row][col] != CellType.EMPTY);
+            isPositionValid = maze[row][col] == CellType.WALL; // Sprawdź, czy pozycja jest pusta
+        } while (!isPositionValid); // Kontynuuj, dopóki nie znajdziesz pustej pozycji
 
-        return new Ghost(row, col);
+        return new Ghost(this, row, col);
     }
 
     public CellType getCellType(int row, int col) {
@@ -116,12 +126,6 @@ public class GameModel {
         return true;
     }
 
-    public void movePacman(Direction direction) {
-        if (canMove(direction)) {
-            pacman.move();
-            pacman.setDirection(direction);
-        }
-    }
 
     public Board getBoard() {
         return board;
@@ -129,6 +133,11 @@ public class GameModel {
     public Pacman getPacman() {
         return pacman;
     }
+
+    public List<Ghost> getGhosts() {
+        return ghosts;
+    }
+
 
     public int getRows() {
         return rows;

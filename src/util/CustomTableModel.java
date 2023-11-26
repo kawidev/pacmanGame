@@ -1,6 +1,7 @@
 package util;
 
 import model.*;
+import view.GhostView;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -10,6 +11,8 @@ import java.net.URL;
 public class CustomTableModel extends AbstractTableModel {
 
     private ImageIcon[][] pacmanImages; // Tablica ikon dla animacji
+    private ImageIcon[] ghostImages; // Tablica ikon dla animacji
+    private ImageIcon wallImage;
     private GameModel gameModel;
 
 
@@ -17,6 +20,7 @@ public class CustomTableModel extends AbstractTableModel {
         this.gameModel = gameModel;
         this.pacmanImages = new ImageIcon[4][4]; // 4 kierunki, 3 etapy otwierania otworu gębowego :D
         loadPacmanImages();
+        this.wallImage = new ImageIcon("resources/wall.png");
     }
 
     private void loadPacmanImages() {
@@ -92,18 +96,33 @@ public class CustomTableModel extends AbstractTableModel {
             return pacmanImages[direction.ordinal()][frame];
         }
 
+        for (Ghost ghost : gameModel.getGhosts()) {
+            if (ghost.getX() == columnIndex && ghost.getY() == rowIndex) {
+                // Zwraca ikonę ducha odpowiadającą jego kierunkowi
+                if (isGhostCell(columnIndex, rowIndex)) {
+                    return new GhostView(ghost);
+                }
+            }
+        }
         CellType cellType = gameModel.getCellType(rowIndex, columnIndex);
         switch (cellType) {
             case WALL:
-                return Color.BLUE; // Możesz użyć obiektu Color lub ścieżki do obrazka ściany
+                return wallImage; // Możesz użyć obiektu Color lub ścieżki do obrazka ściany
             case EMPTY:
-                return Color.WHITE; // Możesz użyć obrazka ścieżki
+                return Color.GRAY; // Możesz użyć obrazka ścieżki
             // Dodaj inne przypadki dla różnych typów komórek
             default:
                 return null;
         }
     }
 
+    private boolean isGhostCell(int columnIndex, int rowIndex) {
+        for(Ghost ghost : gameModel.getGhosts()) {
+            if(ghost.getX() == columnIndex && ghost.getY() == rowIndex)
+                return true;
+        }
+        return false;
+    }
 
 
     private boolean isPacmanCell(int x, int y) {

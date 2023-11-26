@@ -16,35 +16,18 @@ public class GamePanel extends JPanel {
 
     public GamePanel(GameModel gameModel) {
         CustomTableModel tableModel = new CustomTableModel(gameModel);
-        gameTable = new JTable(tableModel);
+        this.gameTable = new JTable(tableModel);
+        customGameTable(gameTable);
 
-        gameTable.setRowSelectionAllowed(false);
-        gameTable.setColumnSelectionAllowed(false);
-        gameTable.setRowHeight(50);
-
-        gameTable.getTableHeader().setReorderingAllowed(false);
-        gameTable.getTableHeader().setVisible(false);
-
-        for (int i = 0; i < gameTable.getColumnCount(); i++) {
-            gameTable.getColumnModel().getColumn(i).setPreferredWidth(50);
-            gameTable.getColumnModel().getColumn(i).setMinWidth(50);
-            gameTable.getColumnModel().getColumn(i).setMaxWidth(50);
-        }
         JScrollPane scrollPane = new JScrollPane(gameTable);
 
-        // Dopasowujemy rozmiar JScrollPane do preferowanego rozmiaru okna gry:
-        scrollPane.setPreferredSize(new Dimension(550, 550));
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        customScrollPane(scrollPane);
         this.add(scrollPane, BorderLayout.CENTER);
 
         for (int i = 0; i < gameTable.getColumnCount(); i++) {
             TableColumn tableColumn = gameTable.getColumnModel().getColumn(i);
             tableColumn.setPreferredWidth(50);
         }
-        gameTable.setFocusable(false);
-
-        gameTable.setDefaultRenderer(Object.class, new ImageRenderer());
 
         tableModel.startPacmanAnimation();
 
@@ -60,6 +43,32 @@ public class GamePanel extends JPanel {
 
         setFocusable(true);
         requestFocusInWindow();
+    }
+
+    public void customGameTable(JTable gameTable) {
+        gameTable.setRowSelectionAllowed(false);
+        gameTable.setColumnSelectionAllowed(false);
+        gameTable.setShowGrid(false);
+        gameTable.setRowHeight(50);
+
+        gameTable.getTableHeader().setReorderingAllowed(false);
+        gameTable.getTableHeader().setVisible(false);
+
+        for (int i = 0; i < gameTable.getColumnCount(); i++) {
+            gameTable.getColumnModel().getColumn(i).setPreferredWidth(50);
+            gameTable.getColumnModel().getColumn(i).setMinWidth(50);
+            gameTable.getColumnModel().getColumn(i).setMaxWidth(50);
+        }
+        gameTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
+        gameTable.setFocusable(false);
+        gameTable.setDefaultRenderer(Object.class, new GameCellRenderer());
+    }
+
+    public void customScrollPane(JScrollPane scrollPane) {
+
+        scrollPane.setPreferredSize(new Dimension(1000, 1000));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     }
 
     public JTable getGameTable() {

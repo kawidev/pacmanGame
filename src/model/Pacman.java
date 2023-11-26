@@ -110,4 +110,8 @@ public class Pacman {
     public int getAnimationFrame() {
         return animationFrame;
     }
+
+    public Point getPosition() {
+        return new Point(x, y);
+    }
 }
