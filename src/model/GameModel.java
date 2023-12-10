@@ -7,39 +7,68 @@ Stan planszy (pozycja ścian, kropek, power pelletów).
 Wynik gry, liczba żyć, aktualny poziom.
 Inne zmienne gry, jak ulepszenia.*/
 
+import controller.GameController;
+
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class GameModel {
+
+    private static GameModel instance;
     private Board board; // Plansza gry
     private Pacman pacman; // Postać gracza
-    private ArrayList<Ghost> ghosts;
-    private int score; // Wynik gry
-    private int lives; // Liczba żyć
+    private List<Ghost> ghosts;
+    private List<Dot> dots;
 
-    private final int GHOST_FOR_CELLS = 45;
+    private boolean isGameOver;
+    private final int GHOST_FOR_CELLS = 25000;
 
-    private GameLevel gameLevel;
 
     private MazeGenerator mazeGenerator;
     private CellType[][] maze;
     private int rows;
     private int cols;
 
-    public GameModel(int rows, int cols) {
+    private long time, endTime, playerTime;
+
+    private GameModel(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
         this.board = new Board(rows, cols); // Inicjalizacja planszy
 
         this.ghosts = new ArrayList<>();
+        this.dots = new ArrayList<>();
 
         initializeMaze();
         initializePacman();
         initializeGhosts();
+        initializeDots();
+        isGameOver = false;
+        this.time = System.currentTimeMillis();
+    }
 
+    public static GameModel getInstance(int rows, int cols) {
+        if(instance == null) {
+            instance = new GameModel(rows, cols);
+        }
+        return instance;
+    }
 
+    public static void removeInstance() {
+        if(instance != null) instance = null;
+    }
+
+    public void playAgain() {
+        this.getPacman().playAgain();
+        for(Ghost ghost : ghosts) {
+            ghost.playAgain();
+        }
+        for(Dot dot : dots) {
+            dot.playAgain();
+        }
+        isGameOver = false;
     }
 
     public void initializeGhosts() {
@@ -76,7 +105,7 @@ public class GameModel {
         };
         Point startPoint = firstCellFinder.findFirstEmptyCell(maze);
         assert startPoint != null;
-        this.pacman = new Pacman(this, startPoint);
+        this.pacman = new Pacman(startPoint.x, startPoint.y, this);
         pacman.startMoving();
     }
 
@@ -114,18 +143,22 @@ public class GameModel {
             isPositionValid = maze[row][col] == CellType.WALL; // Sprawdź, czy pozycja jest pusta
         } while (!isPositionValid); // Kontynuuj, dopóki nie znajdziesz pustej pozycji
 
-        return new Ghost(this, row, col);
+        return new Ghost(row, col, this);
     }
 
+    public void initializeDots() {
+        for (int r = 0; r < maze.length; r++) {
+            for (int c = 0; c < maze[0].length; c++) {
+                if (maze[r][c] == CellType.EMPTY) {
+                    dots.add(new Dot(c, r, this));
+                    maze[r][c] = CellType.DOT;
+                }
+            }
+        }
+    }
     public CellType getCellType(int row, int col) {
         return maze[row][col];
     }
-    public boolean canMove(Direction direction) {
-        // Sprawdź, czy ruch w danym kierunku jest możliwy
-        // Ta metoda powinna sprawdzić, czy nowa pozycja Pacmana nie jest ścianą i nie wychodzi poza planszę
-        return true;
-    }
-
 
     public Board getBoard() {
         return board;
@@ -149,5 +182,24 @@ public class GameModel {
 
     public CellType[][] getMaze() {
         return maze;
+    }
+
+    public List<Dot> getDots() {
+        return dots;
+    }
+
+    public boolean isGameOver() {
+        this.isGameOver = this.getPacman().getLives() <= 0;
+
+        if(isGameOver) {
+            this.endTime = System.currentTimeMillis();
+            this.playerTime = endTime - time;
+        }
+
+        return isGameOver;
+    }
+
+    public long getPlayerTime() {
+        return playerTime;
     }
 }

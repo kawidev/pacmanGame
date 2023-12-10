@@ -1,42 +1,42 @@
 package model;
 
-import view.GhostView;
-
-import javax.swing.*;
 import java.awt.*;
 
-public class Ghost {
-    private int x, y;
-
-    private GameModel gameModel;
-    private GhostView ghostView;
-
+public class Ghost extends GameEntity {
     private volatile boolean moving;
-
     private Direction direction;
 
     private Thread moveThread;
 
+    private final Point startPoint = new Point();
+    private final int initialSpeed = 200;
+    private final Direction initialDirection;
 
     private int speed;
 
-    public Ghost(GameModel gameModel, Point startPoint) {
-        this.gameModel = gameModel;
-        this.x = startPoint.x;
-        this.y = startPoint.y;
+
+    public Ghost(int x, int y, GameModel gameModel) {
+        super(x, y, gameModel);
+        startPoint.x = x;
+        startPoint.y = y;
         this.moving = true;
-        this.speed = 600;
+        this.speed = initialSpeed;
         this.direction = Direction.LEFT;
+        initialDirection = direction;
+        startMoving();
     }
 
-    public Ghost(GameModel gameModel, int x, int y) {
-        this.gameModel = gameModel;
-        this.x = x;
-        this.y = y;
-        this.moving = true;
-        this.speed = 600;
-        this.direction = Direction.LEFT;
-        startMoving();
+    @Override
+    public void reset() {
+        this.x = startPoint.x;
+        this.y = startPoint.y;
+        this.speed = initialSpeed;
+        this.direction = initialDirection;
+    }
+
+    @Override
+    public void playAgain() {
+        this.reset();
     }
 
     public void startMoving() {
@@ -119,16 +119,5 @@ public class Ghost {
                 (d1 == Direction.RIGHT && d2 == Direction.LEFT);
     }
 
-
-
-    // Gettery i settery
-    public int getX() { return x; }
-    public void setX(int x) { this.x = x; }
-    public int getY() { return y; }
-    public void setY(int y) { this.y = y; }
     public Direction getDirection() { return direction; }
-
-    public Point getPosition() {
-        return new Point(this.x, this.y);
-    }
 }

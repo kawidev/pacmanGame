@@ -4,24 +4,44 @@ import java.awt.*;
 
 import static model.Direction.*;
 
-public class Pacman {
-    private int x, y; // Pozycja na planszy
+public class Pacman extends GameEntity  {
     private Direction direction; // Kierunek ruchu
-    private GameModel gameModel; // Referencja do modelu gry, aby sprawdzić kolizje
     private int animationFrame;
-
     private int speed;
     private volatile boolean moving;
 
+    private final Point startPosition = new Point();
+    private final int initialSpeed = 200;
+    private final Direction initialDirection = LEFT;
+
+    private int score;
+    private int lives;
+
     private Thread moveThread;
 
-    public Pacman(GameModel gameModel, Point startPoint) {
-        this.gameModel = gameModel;
-        this.x = startPoint.x;
-        this.y = startPoint.y;
+    public Pacman(int x, int y, GameModel gameModel) {
+        super(x, y, gameModel);
+        startPosition.x = x;
+        startPosition.y = y;
         this.moving = true;
-        this.direction = LEFT; // Przykładowy początkowy kierunek
-        this.speed = 400;
+        this.direction = initialDirection; // Przykładowy początkowy kierunek
+        this.speed = initialSpeed;
+        this.score = 0;
+        this.lives = 3;
+    }
+
+    public void reset() {
+        this.x = startPosition.x;
+        this.y = startPosition.y;
+        this.direction = initialDirection;
+        this.speed = initialSpeed;
+    }
+
+    @Override
+    public void playAgain() {
+        reset();
+        this.score = 0;
+        this.lives = 3;
     }
 
     // Metoda do aktualizacji animacji
@@ -49,8 +69,8 @@ public class Pacman {
 
     public synchronized void move() {
         // Sprawdź kierunek i zaktualizuj pozycję Pacmana, jeśli ruch jest możliwy
-        int newX = gameModel.getPacman().getX();
-        int newY = gameModel.getPacman().getY();
+        int newX = gameModel.getPacman().getPosition().x;
+        int newY = gameModel.getPacman().getPosition().y;
 
         switch (gameModel.getPacman().getDirection()) {
             case UP:
@@ -68,39 +88,20 @@ public class Pacman {
         }
 
         if (newX >= 0 && newX < gameModel.getCols() && newY >= 0 && newY < gameModel.getRows()) {
-            // Sprawdź, czy nowa pozycja jest typu EMPTY
-            if (gameModel.getCellType(newY, newX) == CellType.EMPTY) {
+            // Sprawdź, czy nowa pozycja jest typu EMPTY lub DOT
+            if (gameModel.getCellType(newY, newX) == CellType.EMPTY || gameModel.getCellType(newY, newX) == CellType.DOT) {
                 this.setPosition(newX, newY);
             }
         }
     }
-
-
-
-
-    public int getX() {
-        return x;
-    }
-
-    public void setX(int x) {
-        this.x = x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public void setY(int y) {
-        this.y = y;
-    }
-
-    public void setPosition(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
     public synchronized void setDirection(Direction newDirection) {
         this.direction = newDirection;
+    }
+
+    public void addScore(GameEntity eatable) {
+        if (eatable instanceof Dot) {
+            this.score += 1;
+        }
     }
 
     public Direction getDirection() {
@@ -113,5 +114,16 @@ public class Pacman {
 
     public Point getPosition() {
         return new Point(x, y);
+    }
+
+    public int getLives() {
+        return lives;
+    }
+    public void takeLife() {
+        this.lives--;
+    }
+
+    public int getScore() {
+        return score;
     }
 }
