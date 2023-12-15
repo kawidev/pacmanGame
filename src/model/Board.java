@@ -1,58 +1,123 @@
 package model;
 
+import java.util.Collections;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
+import java.util.Random;
 
-/* Rola: Reprezentuje planszę gry, zawierającą komórki (Cell).
-Implementacja: Zarządza siatką komórek, określa położenie ścian,
-ścieżek oraz może przechowywać informacje o miejscach pojawiania się kropek i power pelletów.*/
-public class Board {
-    private CellType[][] maze;
-    private int rows;
-    private int cols;
+public class MazeGenerator {
+    private final int rows;
+    private final int cols;
+    private final CellType[][] maze;
 
-    public Board(int rows, int cols) {
+    public MazeGenerator(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
-        maze = new CellType[rows][cols];
+        this.maze = new CellType[rows][cols];
         generateMaze();
     }
 
     public void generateMaze() {
-        MazeGenerator mazeGenerator = new MazeGenerator(rows, cols);
-        maze = mazeGenerator.getMaze();
-    }
-
-    public boolean canMove(int x, int y, Direction direction) {
-        // Logika sprawdzania możliwości ruchu
-        // Przykład dla ruchu w prawo
-        switch (direction) {
-            case RIGHT:
-                return x + 1 < cols && maze[y][x + 1] != CellType.WALL;
-            // Dodaj logikę dla pozostałych kierunków
+        for (CellType[] row : maze) {
+            Arrays.fill(row, CellType.WALL);
         }
-        return false;
+
+        Random rand = new Random();
+        // Start from a random cell
+        int r = rand.nextInt(rows - 2) + 1;
+        int c = rand.nextInt(cols - 2) + 1;
+        maze[r][c] = CellType.EMPTY;
+
+        Stack<int[]> stack = new Stack<>();
+        stack.push(new int[]{r, c});
+
+        while (!stack.isEmpty()) {
+            int[] cell = stack.pop();
+            List<int[]> neighbours = getNeighbours(cell[0], cell[1]);
+
+            if (!neighbours.isEmpty()) {
+                stack.push(cell);
+                int[] chosen = neighbours.get(rand.nextInt(neighbours.size()));
+                // Remove the wall between the current cell and the chosen cell
+                int inBetweenR = (cell[0] + chosen[0]) / 2;
+                int inBetweenC = (cell[1] + chosen[1]) / 2;
+                maze[inBetweenR][inBetweenC] = CellType.EMPTY;
+                maze[chosen[0]][chosen[1]] = CellType.EMPTY;
+                stack.push(chosen);
+            }
+        }
+
+        // Dodawanie połączeń dla ślepych zaułków
+        addConnectionsToDeadEnds();
     }
 
-    public int getRows() {
-        return rows;
+    private void addConnectionsToDeadEnds() {
+        for (int i = 1; i < rows - 1; i++) {
+            for (int j = 1; j < cols - 1; j++) {
+                // Sprawdzamy, czy to ślepy zaułek
+                if (maze[i][j] == CellType.EMPTY && isDeadEnd(i, j)) {
+                    // Sprawdzamy, czy można przebić ścianę
+                    punchThroughIfPossible(i, j);
+                }
+            }
+        }
     }
 
-    public void setRows(int rows) {
-        this.rows = rows;
+    private List<int[]> getNeighbours(int r, int c) {
+        List<int[]> neighbours = new ArrayList<>();
+        for (int[] d : new int[][]{{-2, 0}, {2, 0}, {0, -2}, {0, 2}}) {
+            int nr = r + d[0];
+            int nc = c + d[1];
+            if (nr >= 1 && nr < rows - 1 && nc >= 1 && nc < cols - 1 && maze[nr][nc] == CellType.WALL) {
+                neighbours.add(new int[]{nr, nc});
+            }
+        }
+        Collections.shuffle(neighbours);
+        return neighbours;
     }
 
-    public int getCols() {
-        return cols;
+    private boolean isDeadEnd(int row, int col) {
+        int openPaths = 0;
+        for (int[] d : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
+            int nr = row + d[0];
+            int nc = col + d[1];
+            if (maze[nr][nc] == CellType.EMPTY) {
+                openPaths++;
+            }
+        }
+        return openPaths == 1;
     }
 
-    public void setCols(int cols) {
-        this.cols = cols;
+    private void punchThroughIfPossible(int row, int col) {
+        for (int[] d : new int[][]{{-2, 0}, {2, 0}, {0, -2}, {0, 2}}) {
+            int nr = row + d[0];
+            int nc = col + d[1];
+            if (nr >= 1 && nr < rows - 1 && nc >= 1 && nc < cols - 1 && maze[nr][nc] == CellType.EMPTY) {
+                int wallRow = (row + nr) / 2;
+                int wallCol = (col + nc) / 2;
+                if (maze[wallRow][wallCol] == CellType.WALL && !createsLoop(wallRow, wallCol, row, col)) {
+                    maze[wallRow][wallCol] = CellType.EMPTY;
+                }
+            }
+        }
     }
 
-    public CellType getCellType(int x, int y) {
-        return maze[x][y];
+    private boolean createsLoop(int wallRow, int wallCol, int cellRow, int cellCol) {
+        int emptyCount = 0;
+        for (int[] d : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
+            int nr = wallRow + d[0];
+            int nc = wallCol + d[1];
+            if (nr == cellRow && nc == cellCol) continue; // ignore the cell itself
+            if (maze[nr][nc] == CellType.EMPTY) {
+                emptyCount++;
+            }
+        }
+        return emptyCount > 1; // if more than 1 empty neighbour, it creates a loop
     }
 
-    public void setCellType(int x, int y, CellType type) {
-        maze[x][y] = type;
+    public CellType[][] getMaze() {
+        return maze;
     }
 }
